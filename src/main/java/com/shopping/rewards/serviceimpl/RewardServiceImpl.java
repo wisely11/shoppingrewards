@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.shopping.rewards.config.RewardPointsConfig;
 import com.shopping.rewards.dto.MonthlyReward;
 import com.shopping.rewards.dto.RewardRequest;
 import com.shopping.rewards.dto.RewardResponse;
@@ -32,6 +33,9 @@ public class RewardServiceImpl implements RewardService {
 	@Autowired
 	CustomerRepository customerRepo;
 
+	@Autowired
+	RewardPointsConfig rpConfig;
+	
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	@Override
@@ -89,13 +93,13 @@ public class RewardServiceImpl implements RewardService {
 		return result;
 	}
 
-	public int calculatePoints(BigDecimal total) {
+	private int calculatePoints(BigDecimal total) {
 		int points = 0;
 		double amount = total.doubleValue();
-		if (amount > 100) {
+		if (amount > rpConfig.getRewardPoints2xThreshold()) {
 			points += (int) ((amount - 100) * 2);
 			points += 50;
-		} else if (amount > 50) {
+		} else if (amount > rpConfig.getRewardPoints1xThreshold()) {
 			points += (int) (amount - 50);
 		}
 		return points;

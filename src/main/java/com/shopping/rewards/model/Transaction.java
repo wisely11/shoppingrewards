@@ -11,7 +11,7 @@ import jakarta.persistence.Id;
 public class Transaction {
 	@Id
 	@GeneratedValue
-	private Integer Id;
+	private Integer id;
     private String customerId;
     private LocalDate date;
     private BigDecimal amount;
@@ -22,6 +22,10 @@ public class Transaction {
         this.customerId = customerId;
         this.date = date;
         this.amount = amount;
+    }
+    
+    public Integer getId() {
+        return id;
     }
 
     public String getCustomerId() {

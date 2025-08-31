@@ -1,0 +1,104 @@
+package com.shopping.rewards.serviceimpl;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.shopping.rewards.dto.MonthlyReward;
+import com.shopping.rewards.dto.RewardRequest;
+import com.shopping.rewards.dto.RewardResponse;
+import com.shopping.rewards.exception.NotFoundException;
+import com.shopping.rewards.mapper.TransactionMapper;
+import com.shopping.rewards.model.Customer;
+import com.shopping.rewards.model.Transaction;
+import com.shopping.rewards.repository.CustomerRepository;
+import com.shopping.rewards.repository.TransactionRepository;
+import com.shopping.rewards.service.RewardService;
+
+@Service
+public class RewardServiceImpl implements RewardService {
+
+	@Autowired
+	TransactionRepository txnRepo;
+
+	@Autowired
+	CustomerRepository customerRepo;
+
+	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+	@Override
+	public RewardResponse calculateRewards(RewardRequest request) {
+		String customerId = request.getCustomerId();
+
+		// Validate if customer is present
+		Optional<Customer> customer = customerRepo.findByCustomerId(customerId);
+		if (!customer.isPresent()) {
+			throw new NotFoundException("Customer not found");
+		}
+
+		LocalDate fromDate = LocalDate.parse(request.getFrom(), FORMATTER);
+		LocalDate toDate = LocalDate.parse(request.getTo(), FORMATTER);
+
+		List<Transaction> transactions = txnRepo.findByCustomerIdAndDateBetween(request.getCustomerId(), fromDate,
+				toDate);
+
+		Map<Integer, List<MonthlyReward>> monthlyPoints = new HashMap<>();
+		int totalPoints = 0;
+
+		for (Transaction t : transactions) {
+		    int points = calculatePoints(t.getAmount());
+		    totalPoints += points;
+
+		    int year = t.getDate().getYear();
+		    String month = t.getDate().getMonth().toString(); 
+		    monthlyPoints.computeIfAbsent(year, y -> new ArrayList<>());
+
+		    // check if this month already exists
+		    List<MonthlyReward> rewards = monthlyPoints.get(year);
+		    MonthlyReward existing = rewards.stream()
+		            .filter(r -> r.getMonth().equals(month))
+		            .findFirst()
+		            .orElse(null);
+
+		    if (existing == null) { 
+		        MonthlyReward newReward = new MonthlyReward(month, points,
+		                new ArrayList<>(List.of(TransactionMapper.toDto(t, points))));
+		        rewards.add(newReward);
+		    } else {
+		        // update existing
+		        existing.setPoints(existing.getPoints() + points);
+		        existing.getTransactions().add(TransactionMapper.toDto(t, points));
+		    }
+		}
+		
+		RewardResponse result = new RewardResponse();
+		result.setCustomerId(customerId);
+		result.setCustomerName(customer.get().getName());
+		result.setMonthly(monthlyPoints);
+		result.setTotalPoints(totalPoints);
+		result.setFrom(request.getFrom());
+		result.setTo(request.getTo());
+		return result;
+	}
+
+	public int calculatePoints(BigDecimal total) {
+		int points = 0;
+		double amount = total.doubleValue();
+		if (amount > 100) {
+			points += (int) ((amount - 100) * 2);
+			points += 50;
+		} else if (amount > 50) {
+			points += (int) (amount - 50);
+		}
+		return points;
+	}
+
+}

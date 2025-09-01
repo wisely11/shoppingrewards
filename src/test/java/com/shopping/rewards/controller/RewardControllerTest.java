@@ -104,6 +104,6 @@ class RewardControllerTest {
         mockMvc.perform(post("/api/rewards")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(""))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().is4xxClientError());
     }
 }

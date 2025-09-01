@@ -4,10 +4,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.hibernate.service.spi.ServiceException;
 import org.slf4j.Logger;
@@ -20,7 +21,6 @@ import com.shopping.rewards.config.RewardPointsConfig;
 import com.shopping.rewards.dto.MonthlyReward;
 import com.shopping.rewards.dto.RewardRequest;
 import com.shopping.rewards.dto.RewardResponse;
-import com.shopping.rewards.exception.BadRequestException;
 import com.shopping.rewards.exception.NotFoundException;
 import com.shopping.rewards.mapper.TransactionMapper;
 import com.shopping.rewards.model.Customer;
@@ -70,35 +70,31 @@ public class RewardServiceImpl implements RewardService {
 			throw new ServiceException("Database error occurred while fetching transactions");
 		}
 
-		Map<Integer, List<MonthlyReward>> monthlyPoints = new HashMap<>();
-		int totalPoints = 0;
+		Map<Integer, List<MonthlyReward>> monthlyPoints = new ConcurrentHashMap<>();
+		int totalPoints = transactions.parallelStream().mapToInt(t -> {
+			int points = calculatePoints(t.getAmount());
+			int year = t.getDate().getYear();
+			String month = t.getDate().getMonth().toString();
 
-		for (Transaction t : transactions) {
-			try {
-				int points = calculatePoints(t.getAmount());
-				totalPoints += points;
+			monthlyPoints.computeIfAbsent(year, y -> new CopyOnWriteArrayList<>());
+			List<MonthlyReward> rewards = monthlyPoints.get(year);
 
-				int year = t.getDate().getYear();
-				String month = t.getDate().getMonth().toString();
-				monthlyPoints.computeIfAbsent(year, y -> new ArrayList<>());
-
-				List<MonthlyReward> rewards = monthlyPoints.get(year);
-				MonthlyReward existing = rewards.stream().filter(r -> r.getMonth().equals(month)).findFirst()
-						.orElse(null);
+			synchronized (rewards) {
+				MonthlyReward existing = rewards.stream()
+					.filter(r -> r.getMonth().equals(month))
+					.findFirst().orElse(null);
 
 				if (existing == null) {
 					MonthlyReward newReward = new MonthlyReward(month, points,
-							new ArrayList<>(List.of(TransactionMapper.toDto(t, points))));
+						new ArrayList<>(List.of(TransactionMapper.toDto(t, points))));
 					rewards.add(newReward);
 				} else {
 					existing.setPoints(existing.getPoints() + points);
 					existing.getTransactions().add(TransactionMapper.toDto(t, points));
 				}
-			} catch (Exception e) {
-				logger.error("Error processing transaction {} for customer {}", t.getId(), customerId, e);
-				throw new BadRequestException(e.getMessage());
 			}
-		}
+			return points;
+		}).sum();
 
 		RewardResponse result = new RewardResponse();
 		result.setCustomerId(customerId);

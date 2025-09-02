@@ -9,6 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 
+/**
+ * Entity representing a customer in the rewards system.
+ */
 @Entity
 public class Customer {
 

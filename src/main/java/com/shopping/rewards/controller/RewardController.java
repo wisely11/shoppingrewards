@@ -14,6 +14,9 @@ import com.shopping.rewards.service.RewardService;
 
 import jakarta.validation.Valid;
 
+/**
+ * REST controller for handling reward calculation requests.
+ */
 @RestController
 @RequestMapping("/api/rewards")
 public class RewardController { 
@@ -21,6 +24,12 @@ public class RewardController {
 	@Autowired
 	RewardService rewardService;
 	
+    /**
+     * Calculates reward points for a customer based on the provided request.
+     * 
+     * @param request the reward calculation request containing customer ID and date range
+     * @return ResponseEntity containing the calculated reward points and customer details
+     */
 	@PostMapping
     public ResponseEntity<RewardResponse> calculateRewards(@Valid @RequestBody RewardRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(rewardService.calculateRewards(request));

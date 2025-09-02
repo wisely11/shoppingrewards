@@ -16,6 +16,9 @@ import com.shopping.rewards.model.Transaction;
 import com.shopping.rewards.repository.CustomerRepository;
 import com.shopping.rewards.repository.TransactionRepository;
 
+/**
+ * Main entry point for the Rewards Spring Boot application.
+ */
 @SpringBootApplication
 public class RewardsApplication {
 
@@ -25,6 +28,13 @@ public class RewardsApplication {
 		SpringApplication.run(RewardsApplication.class, args);
 	}
 
+	/**
+     * Seeds initial customer and transaction data into the database on application startup.
+     * 
+     * @param customers the customer repository
+     * @param txRepo the transaction repository
+     * @return a CommandLineRunner that performs the seeding
+     */
 	@Bean
 	CommandLineRunner seedData(CustomerRepository customers, TransactionRepository txRepo) {
 		logger.info("Seeding data for service");

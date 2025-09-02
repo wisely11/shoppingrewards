@@ -29,6 +29,10 @@ import com.shopping.rewards.repository.CustomerRepository;
 import com.shopping.rewards.repository.TransactionRepository;
 import com.shopping.rewards.service.RewardService;
 
+/**
+ * Implementation of RewardService.
+ * Handles the business logic for calculating customer reward points based on transactions.
+ */
 @Service
 public class RewardServiceImpl implements RewardService {
 	private static final Logger logger = LoggerFactory.getLogger(RewardServiceImpl.class);
@@ -44,6 +48,12 @@ public class RewardServiceImpl implements RewardService {
 
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+	/**
+     * Calculates reward points for a customer based on their transactions within a date range.
+     *
+     * @param request the reward calculation request containing customer ID and date range
+     * @return RewardResponse containing calculated points and details
+     */
 	@Override
 	public RewardResponse calculateRewards(RewardRequest request) {
 		String customerId = request.getCustomerId();
@@ -64,14 +74,17 @@ public class RewardServiceImpl implements RewardService {
 
 		List<Transaction> transactions;
 		try {
-			transactions = txnRepo.findByCustomerIdAndDateBetween(customerId, fromDate, toDate);
+			// Fetch transactions for the customer within the specified date range
+            transactions = txnRepo.findByCustomerIdAndDateBetween(customerId, fromDate, toDate);
 		} catch (DataAccessException e) {
 			logger.error("Database error while fetching transactions for customer {}", customerId, e);
 			throw new ServiceException("Database error occurred while fetching transactions");
 		}
 
-		Map<Integer, List<MonthlyReward>> monthlyPoints = new ConcurrentHashMap<>();
-		int totalPoints = transactions.parallelStream().mapToInt(t -> {
+		// Map to hold monthly reward points grouped by year
+        Map<Integer, List<MonthlyReward>> monthlyPoints = new ConcurrentHashMap<>();
+		// Calculate total points using parallel stream for performance
+        int totalPoints = transactions.parallelStream().mapToInt(t -> {
 			int points = calculatePoints(t.getAmount());
 			int year = t.getDate().getYear();
 			String month = t.getDate().getMonth().toString();
@@ -107,6 +120,12 @@ public class RewardServiceImpl implements RewardService {
 
 	}
 
+	/**
+     * Calculates reward points for a given transaction amount based on configured thresholds.
+     *
+     * @param total the transaction amount
+     * @return the calculated reward points
+     */
 	private int calculatePoints(BigDecimal total) {
 		if (total == null) {
 			logger.error("Transaction amount is null");

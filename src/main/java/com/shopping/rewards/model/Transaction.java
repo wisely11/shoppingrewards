@@ -7,6 +7,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+/**
+ * Entity representing a transactions in the rewards system.
+ */
 @Entity
 public class Transaction {
 	@Id

@@ -1,6 +1,5 @@
 package com.shopping.rewards.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,8 +20,11 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/rewards")
 public class RewardController { 
 	
-	@Autowired
-	RewardService rewardService;
+	private final RewardService rewardService;
+	
+	public RewardController(RewardService rewardService) {
+		this.rewardService = rewardService;
+	}
 	
     /**
      * Calculates reward points for a customer based on the provided request.

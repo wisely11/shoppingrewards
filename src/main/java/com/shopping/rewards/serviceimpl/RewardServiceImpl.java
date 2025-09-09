@@ -13,7 +13,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.hibernate.service.spi.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -37,14 +36,15 @@ import com.shopping.rewards.service.RewardService;
 public class RewardServiceImpl implements RewardService {
 	private static final Logger logger = LoggerFactory.getLogger(RewardServiceImpl.class);
 
-	@Autowired
-	private TransactionRepository txnRepo;
-
-	@Autowired
-	private CustomerRepository customerRepo;
-
-	@Autowired
-	private RewardPointsConfig rpConfig;
+	private final TransactionRepository txnRepo;
+	private final CustomerRepository customerRepo;
+	private final RewardPointsConfig rpConfig;
+	
+	public RewardServiceImpl(TransactionRepository txnRepo, CustomerRepository customerRepo, RewardPointsConfig rpConfig) {
+		this.txnRepo = txnRepo;
+		this.customerRepo = customerRepo;
+		this.rpConfig = rpConfig;
+	}
 
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -59,18 +59,15 @@ public class RewardServiceImpl implements RewardService {
 		String customerId = request.getCustomerId();
 
 		// Validate if customer is present
-		Optional<Customer> customer; 
-		customer = customerRepo.findByCustomerId(customerId);  
+		Optional<Customer> customer = customerRepo.findByCustomerId(customerId);  
 
-		if (!customer.isPresent()) {
+		if (customer.isEmpty()) {
 			logger.error("Customer with ID {} not found", customerId);
 			throw new NotFoundException("Customer not found");
 		}
 
-		LocalDate fromDate;
-		LocalDate toDate;
-		fromDate = LocalDate.parse(request.getFrom(), FORMATTER);
-		toDate = LocalDate.parse(request.getTo(), FORMATTER);
+		LocalDate fromDate = LocalDate.parse(request.getFrom(), FORMATTER);
+		LocalDate toDate = LocalDate.parse(request.getTo(), FORMATTER);
 
 		List<Transaction> transactions;
 		try {

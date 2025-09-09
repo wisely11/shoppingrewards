@@ -5,9 +5,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.DisplayName;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -22,7 +21,6 @@ import com.shopping.rewards.repository.TransactionRepository;
 import com.shopping.rewards.service.RewardService;
 
 @WebMvcTest(RewardController.class)
-@ExtendWith(MockitoExtension.class)
 class RewardControllerTest {
 
     @Autowired
@@ -42,6 +40,7 @@ class RewardControllerTest {
 
 
     @Test
+    @DisplayName("Should return 200 OK when valid reward request is processed successfully")
     void testCalculateRewards_Success() throws Exception {
         RewardResponse response = new RewardResponse();
         response.setCustomerId("11111111-1111-1111-1111-111111111111");
@@ -63,6 +62,7 @@ class RewardControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 Bad Request when request body is empty JSON")
     void testCalculateRewards_InvalidRequest() throws Exception {
         String invalidRequestJson = "{}";
 
@@ -73,6 +73,7 @@ class RewardControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 Bad Request when customerId is missing from request")
     void testCalculateRewards_MissingCustomerId() throws Exception {
         String requestJson = "{"
                 + "\"from\": \"2024-04-01\","
@@ -86,6 +87,7 @@ class RewardControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 Bad Request when date format is invalid")
     void testCalculateRewards_InvalidDateFormat() throws Exception {
         String requestJson = "{"
                 + "\"customerId\": \"11111111-1111-1111-1111-111111111111\","
@@ -100,10 +102,44 @@ class RewardControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 4xx Client Error when request body is completely empty")
     void testCalculateRewards_EmptyBody() throws Exception {
         mockMvc.perform(post("/api/rewards")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(""))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 400 Bad Request when fromDate is after toDate")
+    void testCalculateRewards_FromDateAfterToDate() throws Exception {
+        String requestJson = "{"
+                + "\"customerId\": \"11111111-1111-1111-1111-111111111111\","
+                + "\"from\": \"2025-07-30\","
+                + "\"to\": \"2024-04-01\""
+                + "}";
+
+        mockMvc.perform(post("/api/rewards")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 5xx Server Error when service throws an exception")
+    void testCalculateRewards_ServiceException() throws Exception {
+        Mockito.when(rewardService.calculateRewards(Mockito.any(RewardRequest.class)))
+               .thenThrow(new RuntimeException("Service error"));
+
+        String requestJson = "{"
+                + "\"customerId\": \"11111111-1111-1111-1111-111111111111\","
+                + "\"from\": \"2024-04-01\","
+                + "\"to\": \"2025-07-30\""
+                + "}";
+
+        mockMvc.perform(post("/api/rewards")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestJson))
+                .andExpect(status().is5xxServerError());
     }
 }

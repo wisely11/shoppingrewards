@@ -2,7 +2,9 @@ package com.shopping.rewards.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import com.shopping.rewards.validation.DateRange;
 
+@DateRange
 public class RewardRequest {
 
 	@NotNull

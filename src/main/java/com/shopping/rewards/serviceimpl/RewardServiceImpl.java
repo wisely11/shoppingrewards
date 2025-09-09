@@ -132,15 +132,15 @@ public class RewardServiceImpl implements RewardService {
 			throw new IllegalArgumentException("Transaction amount cannot be null");
 		}
 
-		int points = 0;
+		double points = 0;
 		double amount = total.doubleValue();
 
 		if (amount > rpConfig.getRewardPoints2xThreshold()) {
-			points += (int) ((amount - 100) * 2);
+			points += (amount - 100) * 2;
 			points += 50;
 		} else if (amount > rpConfig.getRewardPoints1xThreshold()) {
-			points += (int) (amount - 50);
+			points += (amount - 50);
 		}
-		return points;
+		return (int) Math.round(points);
 	}
 }

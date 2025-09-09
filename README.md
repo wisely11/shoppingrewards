@@ -49,7 +49,7 @@ A Spring Boot REST API for calculating retailer customer reward points based on 
       },
       {
         "month": "JUNE",
-        "points": 150,
+        "points": 45,
         "transactions": [ ... ]
       }
     ]

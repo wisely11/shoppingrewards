@@ -133,10 +133,10 @@ public class RewardServiceImpl implements RewardService {
 		double amount = total.doubleValue();
 
 		if (amount > rpConfig.getRewardPoints2xThreshold()) {
-			points += (amount - 100) * 2;
+			points += (amount - rpConfig.getRewardPoints2xThreshold()) * 2;
 			points += 50;
 		} else if (amount > rpConfig.getRewardPoints1xThreshold()) {
-			points += (amount - 50);
+			points += (amount - rpConfig.getRewardPoints1xThreshold());
 		}
 		return (int) Math.round(points);
 	}

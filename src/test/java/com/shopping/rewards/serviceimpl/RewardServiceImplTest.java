@@ -133,7 +133,7 @@ class RewardServiceImplTest {
         RewardRequest request = buildRequest("INFO123", "2023-01-01", "2023-12-31");
         RewardResponse response = service.calculateRewards(request);
 
-        // (120-100)*2 + 50 = 90
+        // (120-100)*2 + (100-50)*1 = 40 + 50 = 90
         assertEquals(90, response.getTotalPoints());
     }
 
@@ -212,9 +212,8 @@ class RewardServiceImplTest {
 
         RewardRequest request = buildRequest("INFO123", "2023-01-01", "2023-12-31");
         RewardResponse response = service.calculateRewards(request);
-
-        // (150.75-100)*2 + 50 = 101.5 + 50 = 151.5, rounded to 152
-        assertEquals(152, response.getTotalPoints());
+ 
+        assertEquals(151, response.getTotalPoints());
     }
 
 }
